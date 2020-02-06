@@ -10,8 +10,8 @@ const port = 3000;
 //where are the db files stored on the srver?
 var filelist = [];
 //var db_path="Y:\\hass";
-//var db_path = "C:\\cygwin64\\home\\agoston.lorincz\\hass_db";
-var db_path="c:\\Users\\agoston.lorincz\\Documents\\NetBeansProjects\\hass_db_web";
+var db_path = "C:\\cygwin64\\home\\agoston.lorincz\\hass_db";
+//var db_path="c:\\Users\\agoston.lorincz\\Documents\\NetBeansProjects\\hass_db_web";
 var db_name = "";
 
 //define input for combo chart (currently only 1 is supported)
@@ -121,6 +121,10 @@ const server = http.createServer((req, res) => {
 					data.addColumn({ type: 'datetime', id: 'Start' });
 					data.addColumn({ type: 'datetime', id: 'End' });
 					data.addRows(` + this_text_timeline + `);
+					
+					//var this_dateformat = google.visualization.DateFormat({pattern: "YYYY-MM-DD hh:mm",timeZone: 1});
+					//this_dateformat.format(data,3);
+					//this_dateformat.format(data,4);
 					var tl_chart = new google.visualization.Timeline(document.getElementById(\'timeline\'));
 					var options = {
 						chartArea:{left:0,top:0,width:"80%",height:"80%"}
@@ -463,9 +467,10 @@ function filter_combochart(identifiers, from_date, to_date)
                         while (actuator_end_found === 0)
                         {
                             i = i + 1;
-                            if (typeof entity.data[i][0] === 'undefined')
+                            if (typeof entity.data[i] === 'undefined')
                             {
                                 actuator_end = to_date;
+								actuator_end_found = 1;
                             } else if (entity.data[i][0] !== adata[0])
                             {
                                 actuator_end_found = 1;
@@ -843,7 +848,8 @@ function load_database(filepath)
         {
             //and create variables for the current measurement data
             var adata = JSON.parse(JSON.stringify(entity_data.getAsObject()));
-            var datapair = [adata.state, new Date(adata.last_changed)];
+			var adate=new Date(adata.last_changed);
+            var datapair = [adata.state, new Date(adate.getTime()-adate.getTimezoneOffset()*60*1000)];
             //add it to a list
             datastream.push(datapair);
         }
