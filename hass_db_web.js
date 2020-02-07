@@ -452,9 +452,16 @@ function filter_combochart(identifiers, from_date, to_date)
             for (i = 0; i < entity.data.length; i++)
             {
                 adata = entity.data[i];
-
+                //if this entity is just before the requested interval
+                if (typeof entity.data[i+1] !== 'undefined')
+                {
+                    if (new Date(adata[1]) < from_date && new Date(entity.data[i+1][1]) > from_date)
+                    {
+                        adata[1]=new Date(from_date);
+                    }
+                }
                 //if data is in the required time range
-                if (new Date(adata[1]) < to_date && new Date(adata[1]) > from_date)
+                if (new Date(adata[1]) < to_date && new Date(adata[1]) >= from_date)
                 {
                     if (adata[0] !== "unknown" && adata[0] !== "" && adata[0] !== "None" && adata[0] !== "idle" && adata[0] !== "off" && adata[0] !== "unavailable")
                     {
@@ -797,6 +804,8 @@ function load_database(filepath)
     {
         a_datestr = JSON.parse(JSON.stringify(changes.getAsObject()));
         a_date = new Date(a_datestr.last_changed);
+        a_date=new Date(a_date.getTime()-a_date.getTimezoneOffset()*60*1000);
+        
         if (a_date < min_date) {
             min_date = a_date;
         }
@@ -848,8 +857,9 @@ function load_database(filepath)
         {
             //and create variables for the current measurement data
             var adata = JSON.parse(JSON.stringify(entity_data.getAsObject()));
-			var adate=new Date(adata.last_changed);
-            var datapair = [adata.state, new Date(adate.getTime()-adate.getTimezoneOffset()*60*1000)];
+            var adate=new Date(adata.last_changed);
+            adate=new Date(adate.getTime()-adate.getTimezoneOffset()*60*1000);
+            var datapair = [adata.state, adate];
             //add it to a list
             datastream.push(datapair);
         }
