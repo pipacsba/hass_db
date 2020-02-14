@@ -119,7 +119,7 @@
 				var this_text_timeline = [];
 			} else
 			{
-				$("#db_text").append("Charts created from " + new Date(from_date - (from_date.getTimezoneOffset() * 60000)).toISOString().slice(0, 16) + " to " + new Date(to_date - (from_date.getTimezoneOffset() * 60000)).toISOString().slice(0, 16) + "<BR>\n");
+				$("#db_text").after("Charts created from " + new Date(from_date - (from_date.getTimezoneOffset() * 60000)).toISOString().slice(0, 16) + " to " + new Date(to_date - (from_date.getTimezoneOffset() * 60000)).toISOString().slice(0, 16) + "<BR>\n");
 				//filter the text type elements
 				this_text_timeline = filter_text_timeline(from_date, to_date);
 				//and draw it
