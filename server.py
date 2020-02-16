@@ -21,16 +21,17 @@ c_actuator_summary = []
 
 #some overall variables
 entities = []
-max_date = date.min
-min_date = date.max
+max_date = datetime.combine(date.min, datetime.min.time())
+min_date = datetime.combine(date.max, datetime.min.time())
 unit_types = {}
 text_type = 0
 
 def load_database(filepath):
+	global entities
 	print("Reading DB " + db_name);
 	# read in the whole db file
-	max_date = date.min
-	min_date = date.max
+	max_date = datetime.combine(date.min, datetime.min.time())
+	min_date = datetime.combine(date.max, datetime.min.time())
 	entities = []
 	unit_types = {}
 	db = sqlite3.connect(filepath)
@@ -43,11 +44,12 @@ def load_database(filepath):
 		state      = row[3]
 		attributes = row[4]
 		stat_time  = datetime.strptime(row[6], "%Y-%m-%d %H:%M:%S.%f")
-		print(entity_id)
-		print(state)
-		print(attributes)
-		print(stat_time)
-		break
+		if (min_date > stat_time):
+			min_date = stat_time
+		if (max_date < stat_time):
+			max_date = stat_time
+	
+	print("DB contains data from " + str(min_date) + " to " + str(max_date))
 
 
 #This class will handles any incoming request from
@@ -210,7 +212,7 @@ except KeyboardInterrupt:
         # entities.push(entity);
     # }
 
-    # //finally count text_type entites
+    # //finally count text_type entities
     # text_type = 0;
     # for (var key in entities)
     # {
