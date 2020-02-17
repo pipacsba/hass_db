@@ -10,8 +10,8 @@ PORT_NUMBER = 3000
 
 #where are the db files stored on the srver?
 filelist = []
-#db_path="Y:\\hass"
-db_path = "C:\\cygwin64\\home\\agoston.lorincz\\hass_db"
+db_path="Y:\\hass"
+#db_path = "C:\\cygwin64\\home\\agoston.lorincz\\hass_db"
 db_name = ""
 prev_db_name = ""
 
