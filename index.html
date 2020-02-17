@@ -464,7 +464,7 @@
 										}
 										afound = 1;
 										
-										if (new Date(timeline_db[j][0]).getTime() > new Date(actuator_start).getTime())
+										if (new Date(timeline_db[j][0]).valueOf() > new Date(actuator_start).valueOf())
 										{
 											var this_db_row = Array.apply(null, Array(unit_used_by + identifiers[1][0].length + 1)).map(function () {});
 											this_db_row[0] = new Date(actuator_start);
@@ -494,7 +494,7 @@
 									{
 										bfound = 1;
 										
-										if (new Date(timeline_db[j][0]).getTime() > new Date(actuator_end).getTime())
+										if (new Date(timeline_db[j][0]).valueOf() > new Date(actuator_end).valueOf())
 										{
 											var this_db_row = Array.apply(null, Array(unit_used_by + identifiers[1][0].length + 1)).map(function () {});
 											this_db_row[0] = new Date(actuator_end);
