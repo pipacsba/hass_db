@@ -1,9 +1,11 @@
+<!DOCTYPE html>
 <head>
 	<style type="text/css">
 		html, body {
 			background-color: transparent;
 		}
 	</style>
+	<link rel="icon" href="data:;base64,iVBORw0KGgo=">
 	<script type="text/javascript" src="https://code.jquery.com/jquery-3.4.1.js"></script>
 	<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
 
@@ -50,7 +52,7 @@
 				var optionText= db_list[i]
 				$('#db').append(`<option value="${optionValue}">
 						${optionText}
-					</option>`); 
+					</option>`);
 			}
 		};
 		
@@ -66,6 +68,7 @@
 						if ('db_name' in data)
 						{
 							console.log("Data received");
+							console.log(data);
 							entities=data.entities;
 							max_date=new Date(data.max_date);
 							min_date=new Date(data.min_date);
@@ -79,7 +82,6 @@
 							$("#To").attr({"min" : min_date.toISOString().split('T')[0], "max": max_date.toISOString().split('T')[0]});
 							$("#db_text").html("The " + db_name + " contains data from " + min_date.toISOString().split('T')[0] + " to " + max_date.toISOString().split('T')[0] + "<BR>\n");
 						}
-						console.log(data);
 					},
 					error: function(err){
 						console.log("DB read failed");
@@ -128,6 +130,8 @@
 				{
 					//filter combochart data
 					this_combochart_data=filter_combochart([c_unit, c_added_text_entities], from_date, to_date);
+					console.log("combochart_data");
+					console.log(this_combochart_data);
 					drawCombo(this_combochart_data,[c_unit, c_added_text_entities]);
 					
 				}
@@ -223,8 +227,8 @@
 			data.addColumn({ type: 'datetime', id: 'Start' });
 			data.addColumn({ type: 'datetime', id: 'End' });
 			data.addRows(this_text_timeline);
-			console.log("timeline datatable");
-			console.log(this_text_timeline);
+			//console.log("timeline datatable");
+			//console.log(this_text_timeline);
 			
 			//var this_dateformat = google.visualization.DateFormat({pattern: "YYYY-MM-DD hh:mm",timeZone: 1});
 			//this_dateformat.format(data,3);
@@ -247,6 +251,7 @@
 		{
 			from_date = new Date(from_date);
 			to_date = new Date(to_date);
+			//console.log("To Date:", to_date)
 			var timeline_db = [];
 			//how many entities are using this unit?
 			var unit_used_by = unit_types[identifiers[0]].length;
@@ -379,6 +384,7 @@
 										actuator_end = entity.data[i][1];
 									}
 								}
+								if (actuator_end > to_date) {actuator_end= to_date;}
 								//revert i with one (if ith is not equal it does not mean if )
 								i = i - 1;
 								//find start and end values of the corresponding entity
@@ -449,17 +455,23 @@
 								var afound = 0;
 								for (j = 0; j < timeline_db.length; j++)
 								{
-									//if the element if not undefined, we found the right block in the datatable for the current item
+									//if the element is not undefined, we found the right block in the datatable for the current item
 									if (typeof timeline_db[j][b_id + 1] !== 'undefined')
 									{
+										if (afound ===0)
+										{
+											console.log(j + ": "new Date(timeline_db[j][0]).getTime() + " "+ new Date(actuator_start).getTime())
+										}
 										afound = 1;
-										if (timeline_db[j][0] > new Date(actuator_start).getTime())
+										
+										if (new Date(timeline_db[j][0]).getTime() > new Date(actuator_start).getTime())
 										{
 											var this_db_row = Array.apply(null, Array(unit_used_by + identifiers[1][0].length + 1)).map(function () {});
 											this_db_row[0] = new Date(actuator_start);
 											this_db_row[b_id + 1] = parseFloat(start_data);
 											timeline_db.splice(j, 0, this_db_row);
 											afound = 2;
+											console.log("afound")
 											break;
 										}
 									}
@@ -481,13 +493,15 @@
 									if (typeof timeline_db[j][b_id + 1] !== 'undefined')
 									{
 										bfound = 1;
-										if (new Date(timeline_db[j][0]) > new Date(actuator_end))
+										
+										if (new Date(timeline_db[j][0]).getTime() > new Date(actuator_end).getTime())
 										{
 											var this_db_row = Array.apply(null, Array(unit_used_by + identifiers[1][0].length + 1)).map(function () {});
 											this_db_row[0] = new Date(actuator_end);
 											this_db_row[b_id + 1] = parseFloat(end_data);
 											timeline_db.splice(j, 0, this_db_row);
 											afound = 2;
+											console.log("bfound")
 											break;
 										}
 									} else if (bfound === 1)
@@ -501,7 +515,7 @@
 									}
 								}
 								//if no measurement found for the target, add it to the beginning of the datatable
-								if (afound === 0 && bfound === 0)
+								if ((afound === 0) && (bfound === 0))
 								{
 									var this_db_row = Array.apply(null, Array(unit_used_by + identifiers[1][0].length + 1)).map(function () {});
 									this_db_row[0] = new Date(actuator_start);
@@ -541,10 +555,10 @@
 			{
 				data.addColumn('number', identifiers[1][0][i]);
 			}
-			console.log("combochart data");
-			console.log(combochart_data);
+			//console.log("combochart data");
+			//console.log(combochart_data);
 			data.addRows(combochart_data);
-			var formatNumer = new google.visualization.NumberFormat({pattern: '#.## \[' + identifiers[0] + ']', fractionDigits: 2});
+			var formatNumer = new google.visualization.NumberFormat({pattern: '#.## [' + identifiers[0] + ']', fractionDigits: 2});
 
 			//number formatting
 			for (i = 0; i < unit_types[identifiers[0]].length + identifiers[1][0].length; i++)
@@ -614,7 +628,7 @@
 			}
 			//add data
 			data.addRows(filter_timeline(from_date, to_date, unit));
-			var formatNumer = new google.visualization.NumberFormat({pattern: '#.## \\[' + unit + ']', fractionDigits: 2});
+			var formatNumer = new google.visualization.NumberFormat({pattern: '#.## [' + unit + ']', fractionDigits: 2});
 			//some number formatting (specially for % data, which does not need 100x multiplication)
 			for (i = 0; i < unit_types[unit].length; i++)
 			{
