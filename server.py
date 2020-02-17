@@ -1,16 +1,17 @@
 #!/usr/bin/python
-from BaseHTTPServer import BaseHTTPRequestHandler,HTTPServer
+#from BaseHTTPServer import BaseHTTPRequestHandler,HTTPServer
+from http.server import BaseHTTPRequestHandler,HTTPServer
 from os import curdir, sep, listdir, path
 import sqlite3
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 import json
 
 PORT_NUMBER = 3000
 
 #where are the db files stored on the srver?
 filelist = []
-db_path="Y:\\hass"
-#db_path = "C:\\cygwin64\\home\\agoston.lorincz\\hass_db"
+#db_path="Y:\\hass"
+db_path = "C:\\cygwin64\\home\\agoston.lorincz\\hass_db"
 db_name = ""
 prev_db_name = ""
 
@@ -27,7 +28,7 @@ unit_types = {}
 text_type = 0
 
 def load_database(filepath):
-	global entities
+	global entities, min_date, max_date, unit_types, text_type
 	print("Reading DB " + db_name);
 	# read in the whole db file
 	max_date = datetime.combine(date.min, datetime.min.time())
@@ -42,14 +43,41 @@ def load_database(filepath):
 	for row in output:
 		entity_id  = row[2]
 		state      = row[3]
-		attributes = row[4]
+		attributes = json.loads(row[4])
 		stat_time  = datetime.strptime(row[6], "%Y-%m-%d %H:%M:%S.%f")
 		if (min_date > stat_time):
 			min_date = stat_time
 		if (max_date < stat_time):
 			max_date = stat_time
-	
+		#check if entity exists already
+		existing_id= None
+		for i in range(len(entities)):
+			if (entities[i]['entity_id']== entity_id):
+				existing_id=i
+		if existing_id != None:
+			entities[existing_id]['data'].append([state, stat_time.replace(tzinfo=timezone.utc).astimezone().isoformat()])
+		else:
+			# print(attributes)
+			anentity={}
+			anentity['entity_id']=entity_id
+			anentity['data']=[]
+			anentity['unit']=""
+			if "unit_of_measurement" in attributes:
+				# print("unit of measurement found")
+				anentity['unit']=attributes["unit_of_measurement"]
+				if attributes["unit_of_measurement"] in unit_types:
+					unit_types[attributes["unit_of_measurement"]].append(entity_id)
+				else:
+					unit_types[attributes["unit_of_measurement"]]=[]
+					unit_types[attributes["unit_of_measurement"]].append(entity_id)
+			else:
+				anentity['unit']="text"
+				text_type = text_type + 1
+			anentity['data'].append([state, stat_time.replace(tzinfo=timezone.utc).astimezone().isoformat()])
+			entities.append(anentity)
 	print("DB contains data from " + str(min_date) + " to " + str(max_date))
+	# print(unit_types)
+
 
 
 #This class will handles any incoming request from
@@ -58,7 +86,7 @@ class myHandler(BaseHTTPRequestHandler):
 	
 	#Handler for the GET requests
 	def do_GET(self):
-		global db_name
+		global db_name, prev_db_name, filelist
 		#get Database query
 		prev_db_name = db_name
 		path_arr=self.path.split("?")
@@ -94,7 +122,7 @@ class myHandler(BaseHTTPRequestHandler):
 				if (db_name != prev_db_name):
 					load_database(db_path + "\\" + db_name)	
 				#Open the static file requested and send it
-				f = open(curdir + sep + self.path) 
+				f = open(curdir + sep + self.path, 'rb') 
 				self.send_response(200)
 				self.send_header('Content-type',mimetype)
 				self.end_headers()
@@ -108,16 +136,27 @@ class myHandler(BaseHTTPRequestHandler):
 				self.send_response(200)
 				self.send_header('Content-type',mimetype)
 				self.end_headers()
-				self.wfile.write(json.dumps(filelist))
+				self.wfile.write(json.dumps(filelist).encode('utf-8'))
 				
 
 			if self.path.endswith("get_db"):
-				mimetype='image/gif'
+				mimetype='text/html'
 				sendReply = True
 				self.send_response(200)
 				self.send_header('Content-type',mimetype)
 				self.end_headers()
-				self.wfile.write(json.dumps(entities))
+				
+				db = {};
+				db['entities'] = entities;
+				db['max_date'] = max_date.isoformat();
+				db['min_date'] = min_date.isoformat();
+				db['unit_types'] = unit_types;
+				db['text_type'] = text_type;
+				db['db_name']=db_name;
+				db['c_unit']=c_unit;
+				db['c_added_text_entities']=c_added_text_entities;
+				
+				self.wfile.write(json.dumps(db).encode('utf-8'))
 			
 			return
 
@@ -130,97 +169,11 @@ try:
 	#incoming request
 	
 	server = HTTPServer(('', PORT_NUMBER), myHandler)
-	print 'Started httpserver on port ' , PORT_NUMBER
+	print('Started httpserver on port ' , PORT_NUMBER)
 	
 	#Wait forever for incoming htto requests
 	server.serve_forever()
 
 except KeyboardInterrupt:
-	print '^C received, shutting down the web server'
+	print('^C received, shutting down the web server')
 	server.socket.close()
-
-
-	
-
-    # //check if the from->to dates makes sense
-    # while (changes.step())
-    # {
-        # a_datestr = JSON.parse(JSON.stringify(changes.getAsObject()));
-        # a_date = new Date(a_datestr.last_changed);
-        # a_date=new Date(a_date.getTime()-a_date.getTimezoneOffset()*60*1000);
-        
-        # if (a_date < min_date) {
-            # min_date = a_date;
-        # }
-        # if (a_date > max_date) {
-            # max_date = a_date;
-        # }
-    # }
-    # console.log("Min_date=" + min_date);
-    # console.log("Max_date=" + max_date);
-
-    # // Bind new values
-    # while (stmt.step())
-    # {
-        # var row = stmt.getAsObject();
-        # var strrow = JSON.stringify(row);
-        # var entity = JSON.parse(strrow);
-        # //get entity id, and go through on it
-        # var example_entity = db.prepare('SELECT entity_id, attributes FROM states WHERE entity_id=:anentity LIMIT 1');
-        # example_entity.getAsObject({':anentity': entity.entity_id});
-        # entity = JSON.parse(JSON.stringify(example_entity.getAsObject()));
-        # var attributes = JSON.parse(entity.attributes);
-        # //get the unit of measurment, if exists
-        # if (attributes.hasOwnProperty("unit_of_measurement"))
-        # {
-            # entity.unit = attributes.unit_of_measurement;
-            # //and add the entity to the list
-            # if (entity.unit in unit_types)
-            # {
-                # unit_types[entity.unit].push(entity.entity_id);
-
-            # } else
-            # {
-                # unit_types[entity.unit] = [entity.entity_id];
-            # }
-        # }
-        # //or say it is a text entity
-        # else
-        # {
-            # entity.unit = "text";
-        # }
-        # delete entity.attributes;
-
-        # //get the entity data
-        # var entity_data = db.prepare('SELECT state, last_changed FROM states WHERE entity_id=:anentity');
-        # entity_data.getAsObject({':anentity': entity.entity_id});
-        # var datastream = [];
-        # //step through the netity data
-        # while (entity_data.step())
-        # {
-            # //and create variables for the current measurement data
-            # var adata = JSON.parse(JSON.stringify(entity_data.getAsObject()));
-            # var adate=new Date(adata.last_changed);
-            # adate=new Date(adate.getTime()-adate.getTimezoneOffset()*60*1000);
-            # var datapair = [adata.state, adate];
-            # //add it to a list
-            # datastream.push(datapair);
-        # }
-        # //and add the collected measurmeent data to the entity
-        # entity.data = datastream;
-        # //add the entity to the entities object collection
-        # entities.push(entity);
-    # }
-
-    # //finally count text_type entities
-    # text_type = 0;
-    # for (var key in entities)
-    # {
-        # var a_entity = entities[key];
-
-        # if (a_entity.unit === "text")
-        # {
-            # text_type = text_type + 1;
-        # }
-    # }
-    # console.log("DB " + db_name + " read");
