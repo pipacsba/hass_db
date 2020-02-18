@@ -10,7 +10,7 @@
 	<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
 
 	<script type="text/javascript">
-		google.charts.load("current", {packages:["timeline","corechart"]});
+		google.charts.load("current", {packages:["timeline","corechart", "table"]});
 
 		var c_unit = "";
 		var c_added_text_entities = [];
@@ -67,8 +67,8 @@
 					success : function(data){
 						if ('db_name' in data)
 						{
-							console.log("Data received");
-							console.log(data);
+							//console.log("Data received");
+							//console.log(data);
 							entities=data.entities;
 							max_date=new Date(data.max_date);
 							min_date=new Date(data.min_date);
@@ -77,10 +77,10 @@
 							db_name=data.db_name;
 							c_added_text_entities=data.c_added_text_entities;
 							c_unit=data.c_unit;
+							console.log('DB received');
 							DrawGraphs(min_date,max_date);
 							$("#From").attr({"min" : min_date.toISOString().split('T')[0], "max": max_date.toISOString().split('T')[0]});
 							$("#To").attr({"min" : min_date.toISOString().split('T')[0], "max": max_date.toISOString().split('T')[0]});
-							$("#db_text").html("The " + db_name + " contains data from " + min_date.toISOString().split('T')[0] + " to " + max_date.toISOString().split('T')[0] + "<BR>\n");
 						}
 					},
 					error: function(err){
@@ -121,7 +121,11 @@
 				var this_text_timeline = [];
 			} else
 			{
-				$("#db_text").after("Charts created from " + new Date(from_date - (from_date.getTimezoneOffset() * 60000)).toISOString().slice(0, 16) + " to " + new Date(to_date - (from_date.getTimezoneOffset() * 60000)).toISOString().slice(0, 16) + "<BR>\n");
+				html_text = "The " + db_name + " contains data from " + min_date.toISOString().split('T')[0] + " to " + max_date.toISOString().split('T')[0] + "<BR>\n"
+				html_text = html_text+ "Charts created from " + new Date(from_date - (from_date.getTimezoneOffset() * 60000)).toISOString().slice(0, 16) + " to " + new Date(to_date - (to_date.getTimezoneOffset() * 60000)).toISOString().slice(0, 16) + "<BR>\n"
+				console.log("Change HTML object of #db_text to\n " + html_text)
+				$("#db_text").empty();
+				$("#db_text").html(html_text);
 				//filter the text type elements
 				this_text_timeline = filter_text_timeline(from_date, to_date);
 				//and draw it
@@ -130,8 +134,16 @@
 				{
 					//filter combochart data
 					this_combochart_data=filter_combochart([c_unit, c_added_text_entities], from_date, to_date);
-					console.log("combochart_data");
-					console.log(this_combochart_data);
+					html_text="<center>";
+					for (i = 0; i < c_actuator_summary.length; i++)
+					{
+						html_text = html_text + c_added_text_entities[0][i] + " was used for " + parseInt(c_actuator_summary[i] / 1000 / 60 / 60) + "h " + new Date(c_actuator_summary[i]).getUTCMinutes() + "min <BR>";
+					}
+					html_text= html_text + "</center>";
+					$("#combo_text").empty();
+					$("#combo_text").html(html_text);
+					//console.log("combochart_data");
+					//console.log(this_combochart_data);
 					drawCombo(this_combochart_data,[c_unit, c_added_text_entities]);
 					
 				}
@@ -302,8 +314,12 @@
 					}
 
 				}
+			}
+			for (var key in entities)
+			{
+				var entity = entities[key];
 				//if the unit does not match, but to be shown in the combo chart
-				else if (identifiers[1][0].includes(entity.entity_id) > 0)
+				if (identifiers[1][0].includes(entity.entity_id) > 0)
 				{
 					var identifier_id;
 					var leading_text = "";
@@ -320,14 +336,6 @@
 							found = 1;
 							identifier_id = i;
 							a_id = i + unit_used_by;
-						} else
-						{
-							if (found === 0) {
-								leading_text = leading_text + "null,";
-							}
-							if (found === 1) {
-								tailing_text = tailing_text + ",null";
-							}
 						}
 					}
 					//but also the base entities
@@ -337,14 +345,9 @@
 						{
 							found_target = 1;
 							b_id = i;
-						} else if (found_target === 1)
-						{
-							tailing_text = tailing_text + "null,";
-						} else
-						{
-							leading_text = leading_text + "null,";
 						}
 					}
+					//console.log("a_id:" + a_id + " b_id:" + b_id)
 
 					//create sum for the actuator active time
 					c_actuator_summary[identifier_id] = 0;
@@ -352,7 +355,7 @@
 					for (i = 0; i < entity.data.length; i++)
 					{
 						adata = entity.data[i];
-						//if this entity is just before the requested interval
+						//if this entity is just before the requested interval then push it in
 						if (typeof entity.data[i+1] !== 'undefined')
 						{
 							if (new Date(adata[1]) < from_date && new Date(entity.data[i+1][1]) > from_date)
@@ -458,20 +461,20 @@
 									//if the element is not undefined, we found the right block in the datatable for the current item
 									if (typeof timeline_db[j][b_id + 1] !== 'undefined')
 									{
-										if (afound ===0)
-										{
-											console.log(j + ": " + new Date(timeline_db[j][0]).getTime() + " "+ new Date(actuator_start).getTime())
-										}
+										//if (afound ===0)
+										//{
+										//	console.log(j + ": " + new Date(timeline_db[j][0]).getTime() + " "+ new Date(actuator_start).getTime())
+										//}
 										afound = 1;
 										
-										if (new Date(timeline_db[j][0]).valueOf() > new Date(actuator_start).valueOf())
+										if (new Date(timeline_db[j][0]).getTime() > new Date(actuator_start).getTime())
 										{
 											var this_db_row = Array.apply(null, Array(unit_used_by + identifiers[1][0].length + 1)).map(function () {});
 											this_db_row[0] = new Date(actuator_start);
 											this_db_row[b_id + 1] = parseFloat(start_data);
 											timeline_db.splice(j, 0, this_db_row);
 											afound = 2;
-											console.log("afound")
+											//console.log("afound")
 											break;
 										}
 									}
@@ -494,14 +497,14 @@
 									{
 										bfound = 1;
 										
-										if (new Date(timeline_db[j][0]).valueOf() > new Date(actuator_end).valueOf())
+										if (new Date(timeline_db[j][0]).getTime() > new Date(actuator_end).getTime())
 										{
 											var this_db_row = Array.apply(null, Array(unit_used_by + identifiers[1][0].length + 1)).map(function () {});
 											this_db_row[0] = new Date(actuator_end);
 											this_db_row[b_id + 1] = parseFloat(end_data);
 											timeline_db.splice(j, 0, this_db_row);
 											afound = 2;
-											console.log("bfound")
+											//console.log("bfound")
 											break;
 										}
 									} else if (bfound === 1)
@@ -558,7 +561,7 @@
 			//console.log("combochart data");
 			//console.log(combochart_data);
 			data.addRows(combochart_data);
-			var formatNumer = new google.visualization.NumberFormat({pattern: '#.## [' + identifiers[0] + ']', fractionDigits: 2});
+			var formatNumer = new google.visualization.NumberFormat({pattern: '#.## [\'' + JSON.parse('"' + identifiers[0]+ '"') + '\']', fractionDigits: 2});
 
 			//number formatting
 			for (i = 0; i < unit_types[identifiers[0]].length + identifiers[1][0].length; i++)
@@ -575,14 +578,14 @@
 				legend: {position: 'top'},
 				hAxis: {title: "Date", format: "dd-MMM hh:mm"},
 				seriesType: 'line',
-/* 				series: 
-				{
-					//add special options for the actuators: type:area
-					for (i = 0; i < identifiers[1][0].length; i++)
-					{
-						i + unit_types[identifiers[0]].length): {type: 'area', areaOpacity: 0.2}";
-					}
-				} */
+				//series: 
+				//{
+				//	//add special options for the actuators: type:area
+				//	for (i = 0; i < identifiers[1][0].length; i++)
+				//	{
+				//		i + unit_types[identifiers[0]].length): {type: 'area', areaOpacity: 0.2}";
+				//	}
+				//} 
 			}
 			series={};
 			for (i = 0; i < identifiers[1][0].length; i++)
@@ -628,7 +631,7 @@
 			}
 			//add data
 			data.addRows(filter_timeline(from_date, to_date, unit));
-			var formatNumer = new google.visualization.NumberFormat({pattern: '#.## [' + unit + ']', fractionDigits: 2});
+			var formatNumer = new google.visualization.NumberFormat({pattern: '#.## [\'' + JSON.parse('"' + unit + '"') + '\']', fractionDigits: 2});
 			//some number formatting (specially for % data, which does not need 100x multiplication)
 			for (i = 0; i < unit_types[unit].length; i++)
 			{
