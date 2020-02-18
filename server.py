@@ -5,13 +5,15 @@ from os import curdir, sep, listdir, path
 import sqlite3
 from datetime import date, datetime, timezone
 import json
+import ssl
+
 
 PORT_NUMBER = 3000
 
 #where are the db files stored on the srver?
 filelist = []
-#db_path="Y:\\hass"
-db_path = "C:\\cygwin64\\home\\agoston.lorincz\\hass_db"
+db_path="Y:\\hass"
+#db_path = "C:\\cygwin64\\home\\agoston.lorincz\\hass_db"
 db_name = ""
 prev_db_name = ""
 
@@ -169,6 +171,7 @@ try:
 	#incoming request
 	
 	server = HTTPServer(('', PORT_NUMBER), myHandler)
+	server.socket = ssl.wrap_socket (server.socket, certfile='./fullchain.pem', keyfile= './privkey.pem', server_side=True)
 	print('Started httpserver on port ' , PORT_NUMBER)
 	
 	#Wait forever for incoming htto requests
