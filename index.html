@@ -6,11 +6,11 @@
 		}
 	</style>
 	<link rel="icon" href="data:;base64,iVBORw0KGgo=">
-	<script type="text/javascript" src="https://code.jquery.com/jquery-3.4.1.js"></script>
+	<script type="text/javascript" src="https://code.jquery.com/jquery.min.js"></script>
 	<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
 
 	<script type="text/javascript">
-		google.charts.load("current", {packages:["timeline","corechart", "table"]});
+		google.charts.load("current", {packages:["timeline", "corechart", "table"], callback: GoogleVisualizationLoaded});
 
 		var c_unit = "";
 		var c_added_text_entities = [];
@@ -23,8 +23,12 @@
 		var text_type = 0;
 		var db_name="";
 		
-		getDBList();
-		getEntities();
+		// only start processing if the google chart library is loaded
+		function GoogleVisualizationLoaded()
+		{
+			getDBList();
+			getEntities();
+		}
 		
 		function getDBList(e){
 
@@ -78,9 +82,13 @@
 							c_added_text_entities=data.c_added_text_entities;
 							c_unit=data.c_unit;
 							//console.log('DB received');
-							DrawGraphs(min_date,max_date);
-							$("#From").attr({"min" : min_date.toISOString().split('T')[0], "max": max_date.toISOString().split('T')[0]});
-							$("#To").attr({"min" : min_date.toISOString().split('T')[0], "max": max_date.toISOString().split('T')[0]});
+							//console.log(entities.length)
+							if (entities.length > 0)
+							{
+								DrawGraphs(min_date,max_date);
+								$("#From").attr({"min" : min_date.toISOString().split('T')[0], "max": max_date.toISOString().split('T')[0]});
+								$("#To").attr({"min" : min_date.toISOString().split('T')[0], "max": max_date.toISOString().split('T')[0]});
+							}
 						}
 					},
 					error: function(err){
@@ -316,6 +324,7 @@
 
 				}
 			}
+			// and then the additional actuator entities
 			for (var key in entities)
 			{
 				var entity = entities[key];
@@ -388,7 +397,12 @@
 										actuator_end = entity.data[i][1];
 									}
 								}
-								if (actuator_end > to_date) {actuator_end= to_date;}
+								// if Actuator end date is over the to_date, than revert it
+								if (new Date(actuator_end).getTime() > new Date(to_date).getTime())
+								{
+									actuator_end= new Date(to_date); 
+									//console.log("Actuator end date was over the request");
+								}
 								//revert i with one (if ith is not equal it does not mean if )
 								i = i - 1;
 								//find start and end values of the corresponding entity
@@ -462,30 +476,32 @@
 									//if the element is not undefined, we found the right block in the datatable for the current item
 									if (typeof timeline_db[j][b_id + 1] !== 'undefined')
 									{
-										//if (afound ===0)
-										//{
-										//	console.log(j + ": " + new Date(timeline_db[j][0]).getTime() + " "+ new Date(actuator_start).getTime())
-										//}
+										//found block
 										afound = 1;
 										
 										if (new Date(timeline_db[j][0]).getTime() > new Date(actuator_start).getTime())
 										{
+											//build row
 											var this_db_row = Array.apply(null, Array(unit_used_by + identifiers[1][0].length + 1)).map(function () {});
 											this_db_row[0] = new Date(actuator_start);
 											this_db_row[b_id + 1] = parseFloat(start_data);
+											//and add it to the array
 											timeline_db.splice(j, 0, this_db_row);
+											//found place
 											afound = 2;
-											//console.log("afound")
 											break;
 										}
 									}
 									//even if the target entity does not contain data at the specified time (probably no change before)
 									else if (afound === 1)
 									{
+										//build row
 										var this_db_row = Array.apply(null, Array(unit_used_by + identifiers[1][0].length + 1)).map(function () {});
 										this_db_row[0] = new Date(actuator_start);
 										this_db_row[b_id + 1] = parseFloat(start_data);
+										//and add it to the array
 										timeline_db.splice(j, 0, this_db_row);
+										//found place
 										afound = 2;
 										break;
 									}
@@ -496,24 +512,30 @@
 									//if the element if not undefined, we found the right block in the datatable for the current item
 									if (typeof timeline_db[j][b_id + 1] !== 'undefined')
 									{
+										//found block
 										bfound = 1;
 										
 										if (new Date(timeline_db[j][0]).getTime() > new Date(actuator_end).getTime())
 										{
+											//build row
 											var this_db_row = Array.apply(null, Array(unit_used_by + identifiers[1][0].length + 1)).map(function () {});
 											this_db_row[0] = new Date(actuator_end);
 											this_db_row[b_id + 1] = parseFloat(end_data);
+											//and add it to the array
 											timeline_db.splice(j, 0, this_db_row);
+											//found place
 											afound = 2;
-											//console.log("bfound")
 											break;
 										}
 									} else if (bfound === 1)
 									{
+										//build row
 										var this_db_row = Array.apply(null, Array(unit_used_by + identifiers[1][0].length + 1)).map(function () {});
 										this_db_row[0] = new Date(actuator_end);
 										this_db_row[b_id + 1] = parseFloat(end_data);
+										//and add it to the array
 										timeline_db.splice(j, 0, this_db_row);
+										//found place
 										afound = 2;
 										break;
 									}
@@ -536,10 +558,6 @@
 					}
 				}
 			}
-			//convert to text, and clean up
-			//b_timeline = JSON.stringify(timeline_db);
-			//b_timeline = b_timeline.replace(/\],\[/g, "],\n\t\t\t\t[");
-			//b_timeline = b_timeline.replace(/[0-9]{13}/ig, "new Date($&)");
 
 			//return timeline_db;
 			return timeline_db;
@@ -559,17 +577,17 @@
 			{
 				data.addColumn('number', identifiers[1][0][i]);
 			}
-			//console.log("combochart data");
-			//console.log(combochart_data);
+			//add data
 			data.addRows(combochart_data);
-			var formatNumer = new google.visualization.NumberFormat({pattern: '#.## [\'' + JSON.parse('"' + identifiers[0]+ '"') + '\']', fractionDigits: 2});
-
+			
 			//number formatting
+			var formatNumer = new google.visualization.NumberFormat({pattern: '#.## [\'' + JSON.parse('"' + identifiers[0]+ '"') + '\']', fractionDigits: 2});
 			for (i = 0; i < unit_types[identifiers[0]].length + identifiers[1][0].length; i++)
 			{
 				var j = i + 1;
 				formatNumer.format(data, j );
 			}
+			
 			//add options general part
 			var chart = new google.visualization.ComboChart(document.getElementById("combo1"));
 			var options = {
@@ -580,15 +598,8 @@
 				legend: {position: 'top'},
 				hAxis: {title: "Date", format: "dd-MMM hh:mm"},
 				seriesType: 'line',
-				//series: 
-				//{
-				//	//add special options for the actuators: type:area
-				//	for (i = 0; i < identifiers[1][0].length; i++)
-				//	{
-				//		i + unit_types[identifiers[0]].length): {type: 'area', areaOpacity: 0.2}";
-				//	}
-				//} 
 			}
+			//create options for series
 			series={};
 			for (i = 0; i < identifiers[1][0].length; i++)
 			{
@@ -600,29 +611,27 @@
 		
 		function get_line_charts(from_date, to_date)
 		{
+			//clear div contant
 			$('.chartContainer').empty();
-			var script_text = "";
-			var div_text = "";
-			var count = 0;
-			//for each unit
+			//for each unit type  do the drawing
 			for (var aunit in unit_types)
 			{
-				if (count < 100)
+				//do not create line chart for the unit used for the combo chart
+				if (aunit !== c_unit)
 				{
-					count = count + 1;
-					//first the script
-					script_text = script_text + draw_linecharts(aunit, from_date, to_date, count);
-					//than the frontend location
-					//div_text = div_text + "<div id='line" + count + "'></div>\n";
+					draw_linecharts(aunit, from_date, to_date);
 				}
 			}
 		}
 
 		//create linechart script
-		function draw_linecharts(unit, from_date, to_date, count)
+		function draw_linecharts(unit, from_date, to_date)
 		{
+			//create the div container
 			var container = document.createElement('div');
 			$('.chartContainer').append(container);
+			
+			//create google datatable
 			var data = new google.visualization.DataTable();
 			data.addColumn('datetime','time' );
 			
@@ -633,13 +642,15 @@
 			}
 			//add data
 			data.addRows(filter_timeline(from_date, to_date, unit));
-			var formatNumer = new google.visualization.NumberFormat({pattern: '#.## [\'' + JSON.parse('"' + unit + '"') + '\']', fractionDigits: 2});
+			
 			//some number formatting (specially for % data, which does not need 100x multiplication)
+			var formatNumer = new google.visualization.NumberFormat({pattern: '#.## [\'' + JSON.parse('"' + unit + '"') + '\']', fractionDigits: 2});
 			for (i = 0; i < unit_types[unit].length; i++)
 			{
 				var j = i + 1;
 				formatNumer.format(data, j);
 			}
+			
 			//set some options
 			var chart = new google.visualization.LineChart(container);
 			var options = {
@@ -664,8 +675,8 @@
 			from_date = new Date(from_date);
 			to_date = new Date(to_date);
 			var timeline_db = [];
-			var unit_used_by = unit_types[unit].length;
 			//how many entities are using the current unit?
+			var unit_used_by = unit_types[unit].length;
 			//go through all entities
 			for (var key in entities)
 			{
@@ -674,7 +685,7 @@
 				if (entity.unit === unit)// && a_timeline.length<3)
 				{
 					unit_i = 0;
-					//create null elements for the other entities who uses the same unit
+					//which element is it from the ones using the unit
 					for (i = 0; i < unit_types[unit].length; i++)
 					{
 						if (unit_types[unit][i] === entity.entity_id)
@@ -695,7 +706,6 @@
 							if (adata[0] !== "unknown" && adata[0] !== "" && adata[0] !== "None")
 							{
 								//create data line
-								//a_timeline = a_timeline + "\t\t\t\t[new Date(" + new Date(adata[1]).getTime() + ")," + leading_text + adata[0] + tailing_text + "]";
 								var this_db_row = Array.apply(null, Array(unit_used_by + 1)).map(function () {});
 								this_db_row[0] = new Date(adata[1]);
 								this_db_row[unit_i +1] = parseFloat(adata[0]);
@@ -705,9 +715,6 @@
 					}
 				}
 			}
-			//clean up the result
-			//a_timeline = a_timeline + "]";
-			//a_timeline = a_timeline.replace(/,\n,/, ",");
 
 			return timeline_db;
 		}
