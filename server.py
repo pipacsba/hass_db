@@ -12,8 +12,8 @@ PORT_NUMBER = 3000
 
 #where are the db files stored on the srver?
 filelist = []
-db_path="Y:\\hass"
-#db_path = "C:\\cygwin64\\home\\agoston.lorincz\\hass_db"
+#db_path="Y:\\hass"
+db_path = "./"
 db_name = ""
 prev_db_name = ""
 
@@ -31,7 +31,7 @@ text_type = 0
 
 def load_database(filepath):
 	global entities, min_date, max_date, unit_types, text_type
-	print("Reading DB " + db_name);
+	# print("Reading DB " + db_name);
 	# read in the whole db file
 	max_date = datetime.combine(date.min, datetime.min.time())
 	min_date = datetime.combine(date.max, datetime.min.time())
@@ -47,6 +47,7 @@ def load_database(filepath):
 		state      = row[3]
 		attributes = json.loads(row[4])
 		stat_time  = datetime.strptime(row[6], "%Y-%m-%d %H:%M:%S.%f")
+		# check min and max dates
 		if (min_date > stat_time):
 			min_date = stat_time
 		if (max_date < stat_time):
@@ -59,25 +60,29 @@ def load_database(filepath):
 		if existing_id != None:
 			entities[existing_id]['data'].append([state, stat_time.replace(tzinfo=timezone.utc).astimezone().isoformat()])
 		else:
-			# print(attributes)
+			# fill the entity object
 			anentity={}
 			anentity['entity_id']=entity_id
 			anentity['data']=[]
 			anentity['unit']=""
+			# if unit is known
 			if "unit_of_measurement" in attributes:
-				# print("unit of measurement found")
 				anentity['unit']=attributes["unit_of_measurement"]
+				# fill the list of "unit used by"
 				if attributes["unit_of_measurement"] in unit_types:
 					unit_types[attributes["unit_of_measurement"]].append(entity_id)
 				else:
 					unit_types[attributes["unit_of_measurement"]]=[]
 					unit_types[attributes["unit_of_measurement"]].append(entity_id)
+			# unit is "text" calculate how many of it we have
 			else:
 				anentity['unit']="text"
 				text_type = text_type + 1
+			# create data pairs of state and date
 			anentity['data'].append([state, stat_time.replace(tzinfo=timezone.utc).astimezone().isoformat()])
+			# fill entity into entities
 			entities.append(anentity)
-	print("DB contains data from " + str(min_date) + " to " + str(max_date))
+	# print("DB contains data from " + str(min_date) + " to " + str(max_date))
 	# print(unit_types)
 
 
@@ -85,6 +90,9 @@ def load_database(filepath):
 #This class will handles any incoming request from
 #the browser 
 class myHandler(BaseHTTPRequestHandler):
+	
+	def log_message(self, format, *args):
+		return
 	
 	#Handler for the GET requests
 	def do_GET(self):
@@ -116,12 +124,13 @@ class myHandler(BaseHTTPRequestHandler):
 			#set the right mime type
 
 			sendReply = False
-			#print(self.path)
+			#base html
 			if self.path.endswith(".html"):
 				mimetype='text/html'
 				sendReply = True
-				
-				if (db_name != prev_db_name):
+				# load the database
+				# checking if database name changed is removed to enable re-load of the database
+				if (db_name != ""):
 					load_database(db_path + "\\" + db_name)	
 				#Open the static file requested and send it
 				f = open(curdir + sep + self.path, 'rb') 
@@ -130,9 +139,10 @@ class myHandler(BaseHTTPRequestHandler):
 				self.end_headers()
 				self.wfile.write(f.read())
 				f.close()
-				
-			if self.path.endswith("db_list"):
-				print("db_list requested")
+			
+			#db list for drop-down
+			elif self.path.endswith("db_list"):
+				# print("db_list requested")
 				mimetype='text/html'
 				sendReply = True
 				self.send_response(200)
@@ -140,14 +150,14 @@ class myHandler(BaseHTTPRequestHandler):
 				self.end_headers()
 				self.wfile.write(json.dumps(filelist).encode('utf-8'))
 				
-
-			if self.path.endswith("get_db"):
+			#send the database
+			elif self.path.endswith("get_db"):
 				mimetype='text/html'
 				sendReply = True
 				self.send_response(200)
 				self.send_header('Content-type',mimetype)
 				self.end_headers()
-				
+				# prepare data to send
 				db = {};
 				db['entities'] = entities;
 				db['max_date'] = max_date.isoformat();
@@ -160,9 +170,13 @@ class myHandler(BaseHTTPRequestHandler):
 				
 				self.wfile.write(json.dumps(db).encode('utf-8'))
 			
+			# if none of the above, than send not found reply
+			else:
+				self.send_error(404,'File Not Found: %s' % self.path)
+			
 			return
-
-
+			
+		# in case of error send not found
 		except IOError:
 			self.send_error(404,'File Not Found: %s' % self.path)
 
