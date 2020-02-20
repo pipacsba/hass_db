@@ -60,7 +60,7 @@
                             if (adata[0] !== "unknown" && adata[0] !== "" && adata[0] !== "None")
                             {
                                 // create data line
-                                this_db_row = Array.apply(null, new Array(unit_used_by + 1)).map(function () {});
+                                this_db_row = Array.apply(null, new Array(unit_used_by + 1));
                                 this_db_row[0] = new Date(adata[1]);
                                 this_db_row[unit_i +1] = parseFloat(adata[0]);
                                 timeline_db.push(this_db_row);
@@ -220,7 +220,7 @@
                         {
                             if (adata[0] !== "unknown" && adata[0] !== "" && adata[0] !== "None")
                             {
-                                this_db_row = Array.apply(null, new Array(unit_used_by + identifiers[1][0].length + 1)).map(function () {});
+                                this_db_row = Array.apply(null, new Array(unit_used_by + identifiers[1][0].length + 1));
                                 this_db_row[0] = new Date(adata[1]);
                                 this_db_row[a_id + 1] = parseFloat(adata[0]);
                                 timeline_db.push(this_db_row);
@@ -353,18 +353,18 @@
                                 }
 
                                 // create data for the start
-                                this_db_row = Array.apply(null, new Array(unit_used_by + identifiers[1][0].length + 1)).map(function () {});
+                                this_db_row = Array.apply(null, new Array(unit_used_by + identifiers[1][0].length + 1));
                                 this_db_row[0] = new Date(actuator_start);
                                 this_db_row[a_id + 1] = parseFloat(start_data);
                                 timeline_db.push(this_db_row);
 
                                 // create data for the end
-                                this_db_row = Array.apply(null, new Array(unit_used_by + identifiers[1][0].length + 1)).map(function () {});
+                                this_db_row = Array.apply(null, new Array(unit_used_by + identifiers[1][0].length + 1));
                                 this_db_row[0] = new Date(actuator_end);
                                 this_db_row[a_id + 1] = parseFloat(end_data);
                                 timeline_db.push(this_db_row);
                                 // insert null line for the sake of the chart
-                                this_db_row = Array.apply(null, new Array(unit_used_by + identifiers[1][0].length + 1)).map(function () {});
+                                this_db_row = Array.apply(null, new Array(unit_used_by + identifiers[1][0].length + 1));
                                 this_db_row[0] = new Date(actuator_end);
                                 timeline_db.push(this_db_row);
 
@@ -382,7 +382,7 @@
                                         if (new Date(timeline_db[j][0]).getTime() > new Date(actuator_start).getTime())
                                         {
                                             // build row
-                                            this_db_row = Array.apply(null, new Array(unit_used_by + identifiers[1][0].length + 1)).map(function () {});
+                                            this_db_row = Array.apply(null, new Array(unit_used_by + identifiers[1][0].length + 1));
                                             this_db_row[0] = new Date(actuator_start);
                                             this_db_row[b_id + 1] = parseFloat(start_data);
                                             // and add it to the array
@@ -396,7 +396,7 @@
                                     else if (afound === 1)
                                     {
                                         // build row
-                                        this_db_row = Array.apply(null, new Array(unit_used_by + identifiers[1][0].length + 1)).map(function () {});
+                                        this_db_row = Array.apply(null, new Array(unit_used_by + identifiers[1][0].length + 1));
                                         this_db_row[0] = new Date(actuator_start);
                                         this_db_row[b_id + 1] = parseFloat(start_data);
                                         // and add it to the array
@@ -419,7 +419,7 @@
                                         if (new Date(timeline_db[j][0]).getTime() > new Date(actuator_end).getTime())
                                         {
                                             // build row
-                                            this_db_row = Array.apply(null, new Array(unit_used_by + identifiers[1][0].length + 1)).map(function () {});
+                                            this_db_row = Array.apply(null, new Array(unit_used_by + identifiers[1][0].length + 1));
                                             this_db_row[0] = new Date(actuator_end);
                                             this_db_row[b_id + 1] = parseFloat(end_data);
                                             // and add it to the array
@@ -431,7 +431,7 @@
                                     } else if (bfound === 1)
                                     {
                                         // build row
-                                        this_db_row = Array.apply(null, new Array(unit_used_by + identifiers[1][0].length + 1)).map(function () {});
+                                        this_db_row = Array.apply(null, new Array(unit_used_by + identifiers[1][0].length + 1));
                                         this_db_row[0] = new Date(actuator_end);
                                         this_db_row[b_id + 1] = parseFloat(end_data);
                                         // and add it to the array
@@ -444,12 +444,12 @@
                                 // if no measurement found for the target, add it to the beginning of the datatable
                                 if ((afound === 0) && (bfound === 0))
                                 {
-                                    this_db_row = Array.apply(null, new Array(unit_used_by + identifiers[1][0].length + 1)).map(function () {});
+                                    this_db_row = Array.apply(null, new Array(unit_used_by + identifiers[1][0].length + 1));
                                     this_db_row[0] = new Date(actuator_start);
                                     this_db_row[b_id + 1] = parseFloat(start_data);
                                     timeline_db.splice(0, 0, this_db_row);
 
-                                    this_db_row = Array.apply(null, new Array(unit_used_by + identifiers[1][0].length + 1)).map(function () {});
+                                    this_db_row = Array.apply(null, new Array(unit_used_by + identifiers[1][0].length + 1));
                                     this_db_row[0] = new Date(actuator_end);
                                     this_db_row[b_id + 1] = parseFloat(end_data);
                                     timeline_db.splice(0, 0, this_db_row);
@@ -561,6 +561,9 @@
                 i;
             from_date = new Date(from_date);
             to_date = new Date(to_date);
+            // handle if date selector submit provide invalid date (e.g. button pushed without value)
+            if (isNaN(from_date)) {from_date = new Date(min_date);}
+            if (isNaN(to_date)) {to_date = new Date(max_date);}
             //  define from->to dates which makes sense if the fronted selected does not
             if (from_date && to_date) {
                 from_date.setHours(0);
