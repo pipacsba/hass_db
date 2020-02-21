@@ -10,7 +10,6 @@
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
 
     <script type="text/javascript">
-        google.charts.load("current", {packages: ["timeline", "corechart", "table"], callback: GoogleVisualizationLoaded});
 
         var c_unit = "";
         var c_added_text_entities = [];
@@ -686,6 +685,9 @@
             getDBList();
             getEntities();
         }
+        
+        google.charts.load("current", {packages: ["timeline", "corechart", "table"], callback: GoogleVisualizationLoaded});
+        
     </script>
     <title>Hass_db charts</title>
 </head>
