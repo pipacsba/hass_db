@@ -1,11 +1,13 @@
 #!/usr/bin/python
 # from BaseHTTPServer import BaseHTTPRequestHandler,HTTPServer
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.server import HTTPServer, BaseHTTPRequestHandler
 from os import curdir, sep, listdir, path
 import sqlite3
 from datetime import date, datetime, timezone
 import json
 import ssl
+import base64
+import zlib
 
 
 PORT_NUMBER = 3000
@@ -29,6 +31,13 @@ max_date = datetime.combine(date.min, datetime.min.time())
 min_date = datetime.combine(date.max, datetime.min.time())
 unit_types = {}
 text_type = 0
+
+
+# gzip compatible zlib encode
+def zlib_encode(content):
+    zlib_compress = zlib.compressobj(9, zlib.DEFLATED, zlib.MAX_WBITS | 16)
+    data = zlib_compress.compress(content) + zlib_compress.flush()
+    return data
 
 
 def load_database(filepath):
@@ -150,6 +159,7 @@ class MyHandler(BaseHTTPRequestHandler):
                 mimetype = 'text/html'
                 self.send_response(200)
                 self.send_header('Content-type', mimetype)
+                self.send_header("Content-Encoding", "gzip")
                 self.end_headers()
                 # prepare data to send
                 db = {
@@ -162,8 +172,9 @@ class MyHandler(BaseHTTPRequestHandler):
                     'c_unit': c_unit,
                     'c_added_text_entities': c_added_text_entities
                 }
-
-                self.wfile.write(json.dumps(db).encode('utf-8'))
+                data = json.dumps(db).encode('utf-8')
+                data = zlib_encode(data)
+                self.wfile.write(data)
 
             # if none of the above, than send not found reply
             else:
@@ -175,11 +186,46 @@ class MyHandler(BaseHTTPRequestHandler):
         except IOError:
             self.send_error(404, 'File Not Found: %s' % self.path)
 
+
+class SimpleHTTPAuthHandler(BaseHTTPRequestHandler):
+    """Main class to present webpages and authentication."""
+    
+    def log_message(self, a_format, *args):
+        return
+
+    def do_HEAD(self):
+        # head method
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html')
+        self.end_headers()
+
+    def do_authhead(self):
+        # do authentication '''
+        self.send_response(401)
+        self.send_header('WWW-Authenticate', 'Basic realm=\"Test\"')
+        self.send_header('Content-type', 'text/html')
+        self.end_headers()
+
+    def do_GET(self):
+        # Present front page with user authentication.
+        auth_header = self.headers.get('Authorization', '').encode('ascii')
+        if auth_header is None:
+            self.do_authhead()
+            self.wfile.write(b'no auth header received')
+        elif auth_header == b'Basic ' + self.KEY:
+            MyHandler.do_GET(self)
+        else:
+            self.do_authhead()
+            self.wfile.write(auth_header)
+            self.wfile.write(b'not authenticated')
+            
+
 # Create a web server and define the handler to manage the
 # incoming request
-server = HTTPServer(('', PORT_NUMBER), MyHandler)
+server = HTTPServer(('', PORT_NUMBER), SimpleHTTPAuthHandler)
 cert = './fullchain.pem'
 key = './privkey.pem'
+SimpleHTTPAuthHandler.KEY = base64.b64encode(b"user:password")
 server.socket = ssl.wrap_socket(server.socket, certfile=cert, keyfile=key, server_side=True)
 print('Started httpserver on port ', PORT_NUMBER)
 
