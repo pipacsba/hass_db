@@ -262,8 +262,8 @@
                     {
                         adata = entity.data[i];
                         // if this entity is just before the requested interval then push it in
-                        // typeof? (ok)
-                        if (entity.data[i+1] !== 'undefined')
+                        // typeof? (nok)
+                        if (typeof entity.data[i+1] !== 'undefined')
                         {
                             if (new Date(adata[1]) < from_date && new Date(entity.data[i+1][1]) > from_date)
                             {
