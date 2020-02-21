@@ -15,7 +15,8 @@ PORT_NUMBER = 3000
 # where are the db files stored on the srver?
 filelist = []
 # db_path="Y:\\hass"
-db_path = "./"
+# db_path = "./"
+db_path = "/mnt/movies/hass"
 db_name = ""
 prev_db_name = ""
 
@@ -136,7 +137,7 @@ class MyHandler(BaseHTTPRequestHandler):
                 # load the database
                 # checking if database name changed is removed to enable re-load of the database
                 if db_name != "":
-                    load_database(db_path + "\\" + db_name)
+                    load_database(db_path + sep + db_name)
                 # Open the static file requested and send it
                 f = open(curdir + sep + self.path, 'rb')
                 self.send_response(200)
