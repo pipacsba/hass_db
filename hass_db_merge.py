@@ -1,4 +1,5 @@
 import sqlite3
+import sys
 
 ##---------- Drop teble-------------------
 # # Get connections to the databases
@@ -19,8 +20,8 @@ import sqlite3
 ##---------- Drop teble-------------------
 
 
-db_a = sqlite3.connect('hass.db')
-db_b = sqlite3.connect('home-assistant_v2.db')
+db_a = sqlite3.connect(sys.argv[1])
+db_b = sqlite3.connect(sys.argv[2])
 
 a_cursor = db_a.cursor()
 # print(a_cursor.execute("tables"))
@@ -77,5 +78,3 @@ db_a.close
 db_b.close
 
 #SELECT state_id, domain, entity_id, state, attributes, event_id, last_changed, last_updated, created, context_id, context_user_id from states;
-
-
