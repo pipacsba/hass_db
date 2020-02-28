@@ -1,0 +1,6 @@
+#!/bin/bash
+scp -i /ssh_pass.key user@server_addr:/mnt/ramdsk/home-assistant_v2.db /mnt/movies/hass/
+
+python3 /usr/local/bin/read_turris/hass_db_merge.py /mnt/movies/hass/hass.db /mnt/movies/hass/home-assistant_v2.db
+
+rm /mnt/movies/hass/home-assistant_v2.db
