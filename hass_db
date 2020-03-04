@@ -3,9 +3,9 @@
 scp -i /home/scripts/ssh_pass.key pipacsba@192.168.17.115:/mnt/ramdsk/home-assistant_v2.db /mnt/movies/hass/
 
 #if beginning of the month, 
-if [ $(date --date='yesterday' +'%m') = 01 ]; then 
+if [ $(date +'%d') = 01 ]; then 
 	#move the db to a dedcated file
-	mv /mnt/movies/hass/hass.db /mnt/movies/hass/hass_$(date --date='yesterday' +'%Y%m').db
+	mv /mnt/movies/hass/hass.db /mnt/movies/hass/hass_$(date --date='yesterday' +'%Y_%m').db
 	#and copy the schema to replace it
 	cp /mnt/movies/hass/hass_schema.db /mnt/movies/hass/hass.db
 fi
