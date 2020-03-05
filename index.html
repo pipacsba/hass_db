@@ -307,6 +307,7 @@
                                 end_data = 0;
 
                                 // get the entity which contains the target of the actuation
+                                this_entity = undefined;
                                 for (akey in entities)
                                 {
                                     if (entities[akey].entity_id === identifiers[1][1][identifier_id])
@@ -314,32 +315,41 @@
                                         this_entity = entities[akey];
                                     }
                                 }
-                                // and search for the collect target value (for the actuation start and end date, might be different)
-                                for (j = 0; j < this_entity.data.length; j += 1)
+                                if (typeof this_entity !== 'undefined')
                                 {
-                                    p_data = this_entity.data[j];
-                                    // as the measurements are asynchronous, before start date collect both start and end dates
-                                    if (new Date(p_data[1]) <= actuator_start) {
-                                        start_data = p_data[0];
-                                        end_data = p_data[0];
-                                    } else if (new Date(p_data[1]) <= actuator_end && new Date(p_data[1]) > actuator_start)
+                                    // and search for the collect target value (for the actuation start and end date, might be different)
+                                    for (j = 0; j < this_entity.data.length; j += 1)
                                     {
-                                        // after the start date only update the start date
-                                        end_data = p_data[0];
-                                        // except if no data for the start date
-                                        if (start_data === 0) {
+                                        p_data = this_entity.data[j];
+                                        // as the measurements are asynchronous, before start date collect both start and end dates
+                                        if (new Date(p_data[1]) <= actuator_start) {
                                             start_data = p_data[0];
-                                        }
-                                    } else
-                                    {
-                                        // and continue till the end if start or end date is not found
-                                        if (start_data === 0) {
-                                            start_data = p_data[0];
-                                        }
-                                        if (end_data === 0) {
                                             end_data = p_data[0];
+                                        } else if (new Date(p_data[1]) <= actuator_end && new Date(p_data[1]) > actuator_start)
+                                        {
+                                            // after the start date only update the start date
+                                            end_data = p_data[0];
+                                            // except if no data for the start date
+                                            if (start_data === 0) {
+                                                start_data = p_data[0];
+                                            }
+                                        } else
+                                        {
+                                            // and continue till the end if start or end date is not found
+                                            if (start_data === 0) {
+                                                start_data = p_data[0];
+                                            }
+                                            if (end_data === 0) {
+                                                end_data = p_data[0];
+                                            }
                                         }
                                     }
+                                }
+                                else
+                                {
+                                    start_data=23;
+                                    end_data=23;
+                                    console.log("Actuator target for " + identifiers[1][1][identifier_id] + " was not found, replacement value is used.")
                                 }
                                 // if possible calculate the start and the end date difference
                                 // typeof? (ok)
@@ -603,7 +613,14 @@
                     html_text="<center>";
                     for (i = 0; i < c_actuator_summary.length; i += 1)
                     {
-                        html_text = html_text + c_added_text_entities[0][i] + " was used for " + parseInt(c_actuator_summary[i] / 1000 / 60 / 60, 10) + "h " + new Date(c_actuator_summary[i]).getUTCMinutes() + "min <BR>";
+                        if (typeof c_actuator_summary[i] !== 'undefined')
+                        {
+                            html_text = html_text + c_added_text_entities[0][i] + " was used for " + parseInt(c_actuator_summary[i] / 1000 / 60 / 60, 10) + "h " + new Date(c_actuator_summary[i]).getUTCMinutes() + "min <BR>";
+                        }
+                        else
+                        {
+                            html_text = html_text + c_added_text_entities[0][i] + " was not used <BR>"
+                        }
                     }
                     html_text= html_text + "</center>";
                     $("#combo_text").empty();
