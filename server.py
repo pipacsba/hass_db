@@ -15,8 +15,8 @@ PORT_NUMBER = 3000
 # where are the db files stored on the srver?
 filelist = []
 # db_path="Y:\\hass"
-# db_path = "./"
-db_path = "/mnt/movies/hass"
+db_path = "./"
+# db_path = "/mnt/movies/hass"
 db_name = ""
 prev_db_name = ""
 
@@ -49,52 +49,57 @@ def load_database(filepath):
     min_date = datetime.combine(date.max, datetime.min.time())
     entities = []
     unit_types = {}
-    db = sqlite3.connect(filepath)
-    # get every data from it
-    cursor = db.cursor()
-    cursor.execute('SELECT * FROM states')
-    output = cursor.fetchall()  # Returns the results as a list.
-    for row in output:
-        entity_id = row[2]
-        state = row[3]
-        attributes = json.loads(row[4])
-        stat_time = datetime.strptime(row[6], "%Y-%m-%d %H:%M:%S.%f")
-        # check min and max dates
-        if min_date > stat_time:
-            min_date = stat_time
-        if max_date < stat_time:
-            max_date = stat_time
-        # check if entity exists already
-        existing_id = None
-        for i in range(len(entities)):
-            if entities[i]['entity_id'] == entity_id:
-                existing_id = i
-        if existing_id is not None:
-            entities[existing_id]['data'].append([state, stat_time.replace(tzinfo=timezone.utc).astimezone().isoformat()])
-        else:
-            # fill the entity object
-            anentity = {
-                'entity_id': entity_id,
-                'data': [],
-                'unit': ""
-            }
-            # if unit is known
-            if "unit_of_measurement" in attributes:
-                anentity['unit'] = attributes["unit_of_measurement"]
-                # fill the list of "unit used by"
-                if attributes["unit_of_measurement"] in unit_types:
-                    unit_types[attributes["unit_of_measurement"]].append(entity_id)
-                else:
-                    unit_types[attributes["unit_of_measurement"]] = []
-                    unit_types[attributes["unit_of_measurement"]].append(entity_id)
-            # unit is "text" calculate how many of it we have
+    try:
+        db = sqlite3.connect(filepath)
+        # get every data from it
+        cursor = db.cursor()
+        cursor.execute('SELECT * FROM states')
+        output = cursor.fetchall()  # Returns the results as a list.
+        for row in output:
+            entity_id = row[2]
+            state = row[3]
+            attributes = json.loads(row[4])
+            stat_time = datetime.strptime(row[6], "%Y-%m-%d %H:%M:%S.%f")
+            # check min and max dates
+            if min_date > stat_time:
+                min_date = stat_time
+            if max_date < stat_time:
+                max_date = stat_time
+            # check if entity exists already
+            existing_id = None
+            for i in range(len(entities)):
+                if entities[i]['entity_id'] == entity_id:
+                    existing_id = i
+            if existing_id is not None:
+                entities[existing_id]['data'].append([state, stat_time.replace(tzinfo=timezone.utc).astimezone().isoformat()])
             else:
-                anentity['unit'] = "text"
-                text_type = text_type + 1
-            # create data pairs of state and date
-            anentity['data'].append([state, stat_time.replace(tzinfo=timezone.utc).astimezone().isoformat()])
-            # fill entity into entities
-            entities.append(anentity)
+                # fill the entity object
+                anentity = {
+                    'entity_id': entity_id,
+                    'data': [],
+                    'unit': ""
+                }
+                # if unit is known
+                if "unit_of_measurement" in attributes:
+                    anentity['unit'] = attributes["unit_of_measurement"]
+                    # fill the list of "unit used by"
+                    if attributes["unit_of_measurement"] in unit_types:
+                        unit_types[attributes["unit_of_measurement"]].append(entity_id)
+                    else:
+                        unit_types[attributes["unit_of_measurement"]] = []
+                        unit_types[attributes["unit_of_measurement"]].append(entity_id)
+                # unit is "text" calculate how many of it we have
+                else:
+                    anentity['unit'] = "text"
+                    text_type = text_type + 1
+                # create data pairs of state and date
+                anentity['data'].append([state, stat_time.replace(tzinfo=timezone.utc).astimezone().isoformat()])
+                # fill entity into entities
+                entities.append(anentity)
+        db.close();
+
+    except:
+        entities=[]
     # print("DB contains data from " + str(min_date) + " to " + str(max_date))
     # print(unit_types)
 
@@ -108,7 +113,7 @@ class MyHandler(BaseHTTPRequestHandler):
 
     # Handler for the GET requests
     def do_GET(self):
-        global db_name, prev_db_name, filelist
+        global db_name, prev_db_name, filelist, entities
         # get Database query
         prev_db_name = db_name
         path_arr = self.path.split("?")
@@ -137,7 +142,11 @@ class MyHandler(BaseHTTPRequestHandler):
                 # load the database
                 # checking if database name changed is removed to enable re-load of the database
                 if db_name != "":
-                    load_database(db_path + sep + db_name)
+                    if path.isfile(db_path + sep + db_name):
+                        load_database(db_path + sep + db_name)
+                    else:
+                        db_name = ""
+                        entities = []
                 # Open the static file requested and send it
                 f = open(curdir + sep + self.path, 'rb')
                 self.send_response(200)
