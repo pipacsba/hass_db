@@ -2,16 +2,8 @@
 #copy the current db from hass server
 scp -i /home/scripts/ssh_pass.key pipacsba@192.168.17.115:/mnt/ramdsk/home-assistant_v2.db /mnt/movies/hass/
 
-#if beginning of the month, 
-if [ $(date +'%d') = 01 ]; then 
-	#move the db to a dedcated file
-	mv /mnt/movies/hass/hass.db /mnt/movies/hass/hass_$(date --date='yesterday' +'%Y_%m').db
-	#and copy the schema to replace it
-	cp /mnt/movies/hass/hass_schema.db /mnt/movies/hass/hass.db
-fi
-
 #merge the current hass db
-python3 /usr/local/bin/read_turris/hass_db_merge.py /mnt/movies/hass/hass.db /mnt/movies/hass/home-assistant_v2.db
+python3 /usr/local/bin/read_turris/hass_db_merge.py /mnt/movies/hass/hass.db /mnt/movies/hass/home-assistant_v2.db /mnt/movies/hass/hass_schema.db
 
 #remove hass db file
 rm /mnt/movies/hass/home-assistant_v2.db
