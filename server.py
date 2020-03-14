@@ -210,8 +210,9 @@ class SimpleHTTPAuthHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_authhead(self):
-        global db_name
+        global db_name, entities
         db_name = ""
+        entities = []
         # do authentication '''
         self.send_response(401)
         self.send_header('WWW-Authenticate', 'Basic realm=\"Test\"')
