@@ -68,7 +68,7 @@ def load_database(filepath):
             # check if entity exists already
             existing_id = None
             for i in range(len(entities)):
-                if entities[i]['entity_id'] == entity_id:
+                if entities[i]['entity_id'].replace("_","") == entity_id.replace("_",""):
                     existing_id = i
             if existing_id is not None:
                 entities[existing_id]['data'].append([state, stat_time.replace(tzinfo=timezone.utc).astimezone().isoformat()])
