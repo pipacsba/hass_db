@@ -166,5 +166,6 @@ if __name__ == '__main__':
     file__to = sys.argv[1]
     file__from = sys.argv[2]
     file__schema = sys.argv[3]
-    work__dir = sys.argv[4]
+    work__dir = sys.path[0]
+    if len(sys.argv) > 4: work__dir = sys.argv[4]
     do_merge(file__to, file__from, file__schema, work__dir)
